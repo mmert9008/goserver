@@ -12,20 +12,31 @@ import (
 )
 
 const (
-	serverAddress = ":8080"
-	readTimeout   = 5 * time.Second
-	writeTimeout  = 10 * time.Second
-	idleTimeout   = 120 * time.Second
+	defaultServerAddress = ":8888" // Default port if PORT env var is not set
+	readTimeout          = 5 * time.Second
+	writeTimeout         = 10 * time.Second
+	idleTimeout          = 120 * time.Second
+	portEnvVar           = "PORT"
 )
 
 func main() {
+	// Determine the server address from the environment variable or use the default
+	port := os.Getenv(portEnvVar)
+	if port == "" {
+		port = defaultServerAddress
+		fmt.Printf("Using default port: %s\n", defaultServerAddress)
+	} else {
+		port = ":" + port
+		fmt.Printf("Using port from environment variable %s: %s\n", portEnvVar, port)
+	}
+
 	// Create a new ServeMux to handle different routes if needed in the future
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handlePage)
 
 	// Configure the HTTP server with timeouts for better resource management
 	server := &http.Server{
-		Addr:         serverAddress,
+		Addr:         port,
 		Handler:      mux,
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
@@ -35,7 +46,7 @@ func main() {
 
 	// Start the server in a goroutine so it doesn't block the main function
 	go func() {
-		fmt.Printf("Server listening on %s\n", serverAddress)
+		fmt.Printf("Server listening on %s\n", server.Addr)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("HTTP server ListenAndServe: %v", err)
 		}
